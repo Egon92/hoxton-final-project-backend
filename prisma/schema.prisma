@@ -9,3 +9,96 @@ datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
+
+model Employee {
+  id            Int             @id @default(autoincrement())
+  username      String
+  full_name     String
+  email         String
+  avatar        String
+  phone         Int
+  address       String
+  bio           String
+  project       Project[]
+  bids          Bids[]
+  reviews       Reviews[]
+  conversations Conversations[]
+  chat          Chat[]
+}
+
+model Employer {
+  id            Int             @id @default(autoincrement())
+  username      String
+  full_name     String
+  email         String
+  avatar        String
+  phone         Int
+  address       String
+  bio           String
+  project       Project[]
+  conversations Conversations[]
+  chat          Chat[]
+}
+
+model Category {
+  id            Int       @id @default(autoincrement())
+  category_name String
+  category_logo String
+  project       Project[]
+}
+
+model Project {
+  id          Int       @id @default(autoincrement())
+  price       Int
+  deadline    String
+  title       String
+  overview    String
+  description String
+  status      Int
+  employee    Employee  @relation(fields: [employee_id], references: [id])
+  employee_id Int
+  employer    Employer  @relation(fields: [employer_id], references: [id])
+  employer_id Int
+  categoty    Category  @relation(fields: [category_id], references: [id])
+  category_id Int
+  bids        Bids[]
+  reviews     Reviews[]
+}
+
+model Bids {
+  id          Int      @id @default(autoincrement())
+  project     Project  @relation(fields: [project_id], references: [id])
+  project_id  Int
+  bids        Int
+  employee    Employee @relation(fields: [employee_id], references: [id])
+  employee_id Int
+}
+
+model Reviews {
+  id          Int      @id @default(autoincrement())
+  text        String
+  project     Project  @relation(fields: [project_id], references: [id])
+  project_id  Int
+  employee    Employee @relation(fields: [employee_id], references: [id])
+  employee_id Int
+  dateCreated String
+}
+
+model Conversations {
+  id            Int      @id @default(autoincrement())
+  participantId Int
+  employee      Employee @relation(fields: [employee_id], references: [id])
+  employee_id   Int
+  employer      Employer @relation(fields: [employer_id], references: [id])
+  employer_id   Int
+}
+
+model Chat {
+  id            Int      @id @default(autoincrement())
+  messageText   String
+  employee      Employee @relation(fields: [employee_id], references: [id])
+  employee_id   Int
+  conversations Int
+  employer      Employer @relation(fields: [employer_id], references: [id])
+  employer_id   Int
+}
