@@ -19,11 +19,11 @@ model Employee {
   phone         Int
   address       String
   bio           String
-  project       Project[]
+  projects      Project[]
   bids          Bids[]
   reviews       Reviews[]
   conversations Conversations[]
-  chat          Chat[]
+
 }
 
 model Employer {
@@ -35,16 +35,16 @@ model Employer {
   phone         Int
   address       String
   bio           String
-  project       Project[]
+  projects      Project[]
   conversations Conversations[]
-  chat          Chat[]
+
 }
 
 model Category {
   id            Int       @id @default(autoincrement())
   category_name String
   category_logo String
-  project       Project[]
+  projects      Project[]
 }
 
 model Project {
@@ -55,8 +55,8 @@ model Project {
   overview    String
   description String
   status      Int
-  employee    Employee  @relation(fields: [employee_id], references: [id])
-  employee_id Int
+  employee    Employee? @relation(fields: [employee_id], references: [id])
+  employee_id Int?
   employer    Employer  @relation(fields: [employer_id], references: [id])
   employer_id Int
   categoty    Category  @relation(fields: [category_id], references: [id])
@@ -85,20 +85,18 @@ model Reviews {
 }
 
 model Conversations {
-  id            Int      @id @default(autoincrement())
-  participantId Int
-  employee      Employee @relation(fields: [employee_id], references: [id])
-  employee_id   Int
-  employer      Employer @relation(fields: [employer_id], references: [id])
-  employer_id   Int
+  id          Int      @id @default(autoincrement())
+  employee    Employee @relation(fields: [employee_id], references: [id])
+  employee_id Int
+  employer    Employer @relation(fields: [employer_id], references: [id])
+  employer_id Int
+  chats       Chat[]
 }
 
 model Chat {
-  id            Int      @id @default(autoincrement())
-  messageText   String
-  employee      Employee @relation(fields: [employee_id], references: [id])
-  employee_id   Int
-  conversations Int
-  employer      Employer @relation(fields: [employer_id], references: [id])
-  employer_id   Int
+  id               Int           @id @default(autoincrement())
+  messageText      String
+  conversation     Conversations @relation(fields: [conversation_id], references: [id])
+  conversation_id  Int
+  sent_by_employer Boolean
 }
