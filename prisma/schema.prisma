@@ -14,7 +14,8 @@ model Employee {
   id            Int             @id @default(autoincrement())
   username      String
   full_name     String
-  email         String
+  email         String          @unique
+  password      String
   avatar        String
   phone         Int
   address       String
@@ -30,7 +31,8 @@ model Employer {
   id            Int             @id @default(autoincrement())
   username      String
   full_name     String
-  email         String
+  email         String          @unique
+  password      String
   avatar        String
   phone         Int
   address       String

@@ -87,6 +87,31 @@ app.get("/employees/:id", async (req, res) => {
   }
 });
 
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await prisma.employee.findUnique({
+      where: { email: email },
+      include: {
+        reviews: true,
+        conversations: true,
+        projects: true,
+        bids: true,
+      },
+    });
+
+    const checkPassword = bcrypt.compareSync(password, user.password);
+    if (user && checkPassword) {
+      res.send({ user, token: createToken(user.id) });
+    } else {
+      res.send({ error: "user or password incorrect" });
+    }
+  } catch (error) {
+    //@ts-ignore
+    res.status(400).send({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server on http://localhost:${PORT}`);
 });
