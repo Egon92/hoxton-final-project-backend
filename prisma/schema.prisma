@@ -10,36 +10,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Employee {
-  id            Int             @id @default(autoincrement())
-  username      String
-  full_name     String
-  email         String          @unique
-  password      String
-  avatar        String
-  phone         Int
-  address       String
-  bio           String
-  projects      Project[]
-  bids          Bids[]
-  reviews       Reviews[]
-  conversations Conversations[]
+model User {
+  id         Int     @id @default(autoincrement())
+  username   String
+  full_name  String
+  email      String  @unique
+  password   String
+  avatar     String
+  phone      Int
+  address    String
+  bio        String
+  isEmployer Boolean
 
-}
-
-model Employer {
-  id            Int             @id @default(autoincrement())
-  username      String
-  full_name     String
-  email         String          @unique
-  password      String
-  avatar        String
-  phone         Int
-  address       String
-  bio           String
-  projects      Project[]
-  conversations Conversations[]
-
+  postedProjects   Project[]      @relation("employer")
+  acceptedProjects Project[]      @relation("employee")
+  bids             Bids[]
+  reviews          Review[]
+  users            Conversation[] @relation("user")
+  participants     Conversation[] @relation("participant")
+  Chat             Chat[]
 }
 
 model Category {
@@ -50,55 +39,57 @@ model Category {
 }
 
 model Project {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   price       Int
   deadline    String
   title       String
   overview    String
   description String
   status      Int
-  employee    Employee? @relation(fields: [employee_id], references: [id])
+  employee    User?    @relation("employee", fields: [employee_id], references: [id])
   employee_id Int?
-  employer    Employer  @relation(fields: [employer_id], references: [id])
+  employer    User     @relation("employer", fields: [employer_id], references: [id])
   employer_id Int
-  categoty    Category  @relation(fields: [category_id], references: [id])
+  categoty    Category @relation(fields: [category_id], references: [id])
   category_id Int
   bids        Bids[]
-  reviews     Reviews[]
+  reviews     Review[]
 }
 
 model Bids {
-  id          Int      @id @default(autoincrement())
-  project     Project  @relation(fields: [project_id], references: [id])
+  id          Int     @id @default(autoincrement())
+  project     Project @relation(fields: [project_id], references: [id])
   project_id  Int
   bids        Int
-  employee    Employee @relation(fields: [employee_id], references: [id])
+  employee    User    @relation(fields: [employee_id], references: [id])
   employee_id Int
 }
 
-model Reviews {
-  id          Int      @id @default(autoincrement())
+model Review {
+  id          Int     @id @default(autoincrement())
   text        String
-  project     Project  @relation(fields: [project_id], references: [id])
+  project     Project @relation(fields: [project_id], references: [id])
   project_id  Int
-  employee    Employee @relation(fields: [employee_id], references: [id])
+  employee    User    @relation(fields: [employee_id], references: [id])
   employee_id Int
   dateCreated String
 }
 
-model Conversations {
-  id          Int      @id @default(autoincrement())
-  employee    Employee @relation(fields: [employee_id], references: [id])
-  employee_id Int
-  employer    Employer @relation(fields: [employer_id], references: [id])
-  employer_id Int
-  chats       Chat[]
+model Conversation {
+  id             Int  @id @default(autoincrement())
+  user           User @relation("user", fields: [user_id], references: [id])
+  partecipant    User @relation("participant", fields: [participant_id], references: [id])
+  user_id        Int
+  participant_id Int
+
+  chats Chat[]
 }
 
 model Chat {
-  id               Int           @id @default(autoincrement())
-  messageText      String
-  conversation     Conversations @relation(fields: [conversation_id], references: [id])
-  conversation_id  Int
-  sent_by_employer Boolean
+  id              Int          @id @default(autoincrement())
+  messageText     String
+  conversation    Conversation @relation(fields: [conversation_id], references: [id])
+  conversation_id Int
+  user            User         @relation(fields: [userId], references: [id])
+  userId          Int
 }
