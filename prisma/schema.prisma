@@ -90,6 +90,6 @@ model Chat {
   messageText     String
   conversation    Conversation @relation(fields: [conversation_id], references: [id])
   conversation_id Int
-  user            User         @relation(fields: [userId], references: [id])
-  userId          Int
+  user            User         @relation(fields: [user_id], references: [id])
+  user_id          Int
 }

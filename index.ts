@@ -156,7 +156,6 @@ app.post('/projects', async (req, res) => {
 app.get('/projects', async (req, res) => {
   const { category_id } = req.body
   try {
-    console.log("categoryId", category_id)
     let projects = await prisma.project.findMany({ where: { employee_id: null } })
     if (category_id) {
       projects = projects.filter(project => project.category_id === category_id)
@@ -271,7 +270,7 @@ app.post('/chat', async (req, res) => {
   try {
     const user = await getUserFromToken(token)
     const chat = await prisma.chat.create({
-      data: { messageText, conversation_id, userId: user.id }
+      data: { messageText, conversation_id, user_id: user.id }
     })
     res.send(chat)
 
