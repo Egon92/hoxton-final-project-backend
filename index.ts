@@ -249,7 +249,7 @@ app.post('/conversations', async (req, res) => {
   }
 })
 
-app.get('conversations', async (req, res) => {
+app.get('/conversations', async (req, res) => {
   const token = req.headers.authorization || ""
   try {
     const user = await getUserFromToken(token);
