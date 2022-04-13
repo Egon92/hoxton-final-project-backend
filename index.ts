@@ -1,4 +1,4 @@
-import express, { application } from "express";
+import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
@@ -18,29 +18,23 @@ function createToken(id: number) {
   return token;
 }
 
-async function getEmployeeFromToken(token: string) {
+async function getUserFromToken(token: string) {
   const data = jwt.verify(token, process.env.MY_SECRET) as { id: number };
-  const employee = await prisma.employee.findUnique({
+  const employee = await prisma.user.findUnique({
     where: { id: data.id },
   });
 
   return employee;
 }
 
-async function getEmployerFromToken(token: string) {
-  const data = jwt.verify(token, process.env.MY_SECRET) as { id: number };
-  const employer = await prisma.employer.findUnique({
-    where: { id: data.id },
-  });
 
-  return employer;
-}
-app.get("/validateEmployee", async (req, res) => {
+
+app.get("/validate", async (req, res) => {
   const token = req.headers.authorization || " ";
 
   try {
     // @ts-ignore
-    const user = await getEmployeeFromToken(token);
+    const user = await getUserFromToken(token);
     res.send(user);
   } catch (err) {
     // @ts-ignore
@@ -48,33 +42,25 @@ app.get("/validateEmployee", async (req, res) => {
   }
 });
 
-app.get("/validateEmployer", async (req, res) => {
-  const token = req.headers.authorization || " ";
 
-  try {
-    // @ts-ignore
-    const user = await getEmployerFromToken(token);
-    res.send(user);
-  } catch (err) {
-    // @ts-ignore
-    res.status(400).send({ error: err.message });
-  }
-});
 
 app.get("/employees", async (req, res) => {
-  const employees = await prisma.employee.findMany({
+  const employees = await prisma.user.findMany({
     include: {
       reviews: true,
     },
+    where: {
+      isEmployer: false
+    }
   });
 });
 
 app.get("/employees/:id", async (req, res) => {
   const id = Number(req.params.id);
   try {
-    const employee = await prisma.employee.findFirst({
+    const employee = await prisma.user.findUnique({
       where: { id },
-      include: { reviews: true, bids: true },
+      include: { reviews: true },
     });
     if (employee) {
       res.send(employee);
@@ -90,13 +76,10 @@ app.get("/employees/:id", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   try {
-    const user = await prisma.employee.findUnique({
+    const user = await prisma.user.findUnique({
       where: { email: email },
       include: {
-        reviews: true,
-        conversations: true,
-        projects: true,
-        bids: true,
+        reviews: true
       },
     });
 
@@ -104,13 +87,31 @@ app.post("/login", async (req, res) => {
     if (user && checkPassword) {
       res.send({ user, token: createToken(user.id) });
     } else {
-      res.send({ error: "user or password incorrect" });
+      res.status(404).send({ error: "user or password incorrect" });
     }
-  } catch (error) {
+  } catch (err) {
     //@ts-ignore
-    res.status(400).send({ error: error.message });
+    res.status(400).send({ error: err.message });
   }
 });
+
+
+app.post('/signup', async (req, res) => {
+  const { username, full_name, email, password, avatar, phone, address, bio, isEmployer } = req.body
+
+  try {
+    const hash = bcrypt.hashScync(password, 8)
+    const user = await prisma.user.create({
+      data: { username, full_name, email, password: hash, avatar, phone, address, bio, isEmployer }
+    })
+    res.send({ user, token: createToken(user.id) })
+  }
+
+  catch (err) {
+    //@ts-ignore
+    res.status(400).send({ error: err.message })
+  }
+})
 
 app.listen(PORT, () => {
   console.log(`Server on http://localhost:${PORT}`);
