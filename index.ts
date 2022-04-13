@@ -153,12 +153,13 @@ app.post('/projects', async (req, res) => {
   }
 })
 
-app.get('projects', async (req, res) => {
+app.get('/projects', async (req, res) => {
+  const { category_id } = req.body
   try {
-    const categoryId = req.body
+    console.log("categoryId", category_id)
     let projects = await prisma.project.findMany({ where: { employee_id: null } })
-    if (categoryId) {
-      projects = projects.filter(project => project.category_id === categoryId)
+    if (category_id) {
+      projects = projects.filter(project => project.category_id === category_id)
     }
     res.send(projects)
 
@@ -168,6 +169,118 @@ app.get('projects', async (req, res) => {
   }
 })
 
+app.get('/projects/:id', async (req, res) => {
+  const id = Number(req.params.id)
+  try {
+    let project = await prisma.project.findUnique({ where: { id } })
+    if (project) {
+      res.send(project)
+    } else {
+      res.status(404).send({ error: "Project not found" })
+    }
+  } catch (err) {
+    //@ts-ignore
+    res.status(400).send({ error: err.message })
+  }
+})
+
+
+app.post('/bids', async (req, res) => {
+
+  const { project_id, bids, employee_id } = req.body
+  try {
+    const bid = await prisma.bids.create({
+      data: { project_id, bids, employee_id }
+    })
+    res.send(bid)
+  }
+  catch (err) {
+    //@ts-ignore
+    res.status(400).send({ error: err.message })
+  }
+})
+
+app.get('/bids', async (req, res) => {
+  const bid = await prisma.bids.findMany({ include: { employee: true, project: true } })
+
+  res.send(bid)
+
+})
+
+
+
+app.post('/reviews', async (req, res) => {
+
+  const { text, project_id, employee_id, dateCreated } = req.body
+  try {
+    const reviews = await prisma.review.create({
+      data: { text, project_id, employee_id, dateCreated }
+    })
+    res.send(reviews)
+  }
+  catch (err) {
+    //@ts-ignore
+    res.status(400).send({ error: err.message })
+  }
+})
+
+app.get('/reviews', async (req, res) => {
+  const bid = await prisma.review.findMany({ include: { employee: true, project: true } })
+
+  res.send(bid)
+
+})
+
+
+app.post('/conversations', async (req, res) => {
+  const token = req.headers.authorization || ""
+
+  const { participant_id } = req.body
+  try {
+    const user = await getUserFromToken(token);
+    const conversation = await prisma.conversation.create({
+      data: { user_id: user.id, participant_id },
+      include: { chats: true }
+    })
+    res.send(conversation)
+  } catch (err) {
+    //@ts-ignore
+    res.status(400).send({ error: err.message })
+  }
+})
+
+app.get('conversations', async (req, res) => {
+  const token = req.headers.authorization || ""
+  try {
+    const user = await getUserFromToken(token);
+    const conversations = await prisma.conversation.findMany({
+      where: { user_id: user.id },
+      include: { chats: true }
+    })
+    res.send(conversations)
+  } catch (err) {
+    //@ts-ignore
+    res.status(400).send({ error: err.message })
+  }
+})
+
+
+app.post('/chat', async (req, res) => {
+  const { messageText, conversation_id } = req.body
+  const token = req.headers.authorization || ''
+  try {
+    const user = await getUserFromToken(token)
+    const chat = await prisma.chat.create({
+      data: { messageText, conversation_id, userId: user.id }
+    })
+    res.send(chat)
+
+  }
+  catch (err) {
+    //@ts-ignore
+    res.status(400).send({ error: err.message })
+  }
+})
 
 app.listen(PORT, () => {
   console.log(`Server on http://localhost:${PORT}`);
