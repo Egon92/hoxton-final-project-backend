@@ -47,10 +47,6 @@ app.post("/login", async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { email: email },
-      include: {
-        reviews: true,
-        postedProjects: true
-      },
     });
 
     const checkPassword = bcrypt.compareSync(password, user.password);
@@ -105,8 +101,7 @@ app.get("/employees/:id", async (req, res) => {
   const id = Number(req.params.id);
   try {
     const employee = await prisma.user.findUnique({
-      where: { id },
-      include: { reviews: true },
+      where: { id }
     });
     if (employee) {
       res.send(employee);
