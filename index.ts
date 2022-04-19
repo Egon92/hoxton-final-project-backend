@@ -22,7 +22,7 @@ async function getUserFromToken(token: string) {
   const data = jwt.verify(token, process.env.MY_SECRET) as { id: number };
   const employee = await prisma.user.findUnique({
     where: { id: data.id },
-    include: {bids: {include: {employee: true}}, postedProjects: true, acceptedProjects: true},
+    include:{ postedProjects: {include:{employee: true} }, acceptedProjects: true}
   });
 
   return employee;
@@ -48,6 +48,7 @@ app.post("/login", async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { email: email },
+      include:{ postedProjects: {include:{employee: true}}, acceptedProjects: true}
     });
 
     const checkPassword = bcrypt.compareSync(password, user.password);
@@ -69,7 +70,8 @@ app.post('/signup', async (req, res) => {
   try {
     const hash = bcrypt.hashSync(password, 8)
     const user = await prisma.user.create({
-      data: { username, full_name, email, password: hash, avatar, phone, address, bio, isEmployer }
+      data: { username, full_name, email, password: hash, avatar, phone, address, bio, isEmployer },
+      include:{ postedProjects: {include:{employee: true}}, acceptedProjects: true}
     })
     res.send({ user, token: createToken(user.id) })
   }
@@ -195,8 +197,8 @@ app.post('/bids', async (req, res) => {
   }
 })
 
-app.get('/bids/project_id', async (req, res) => {
-  const {project_id} = req.body
+app.get('/bids/:project_id', async (req, res) => {
+  const project_id = Number(req.params.project_id)
   const bid = await prisma.bids.findMany({ include: { employee: true }, where: { project_id } })
 
   res.send(bid)
