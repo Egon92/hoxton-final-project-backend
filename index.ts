@@ -104,7 +104,8 @@ app.get("/employees/:id", async (req, res) => {
   const id = Number(req.params.id);
   try {
     const employee = await prisma.user.findUnique({
-      where: { id }
+      where: { id },
+      include: {acceptedProjects: true}
     });
     if (employee) {
       res.send(employee);
