@@ -22,6 +22,7 @@ async function getUserFromToken(token: string) {
   const data = jwt.verify(token, process.env.MY_SECRET) as { id: number };
   const employee = await prisma.user.findUnique({
     where: { id: data.id },
+    include: {bids: {include: {employee: true}}, postedProjects: true, acceptedProjects: true},
   });
 
   return employee;
@@ -194,8 +195,9 @@ app.post('/bids', async (req, res) => {
   }
 })
 
-app.get('/bids', async (req, res) => {
-  const bid = await prisma.bids.findMany({ include: { employee: true, project: true } })
+app.get('/bids/project_id', async (req, res) => {
+  const {project_id} = req.body
+  const bid = await prisma.bids.findMany({ include: { employee: true }, where: { project_id } })
 
   res.send(bid)
 
