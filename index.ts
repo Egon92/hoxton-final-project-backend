@@ -127,14 +127,14 @@ app.get('/categories', async (req, res) => {
 
 app.post('/projects', async (req, res) => {
 
-  const { price, deadline, title, overview, description, status, employer_id, category_id } = req.body
+  const { price, deadline, title, description, status, category_id } = req.body
   const token = req.headers.authorization || ''
 
   try {
     const user = await getUserFromToken(token)
     if (user.isEmployer) {
       const project = await prisma.project.create({
-        data: { price, deadline, title, overview, description, status, employer_id: employer_id, category_id: category_id }
+        data: { price, deadline, title, description, status, employer_id: user.id, category_id: category_id }
       })
 
       res.send(project)

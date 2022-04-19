@@ -43,14 +43,13 @@ model Project {
   price       Int
   deadline    String
   title       String
-  overview    String
   description String
   status      Int
   employee    User?    @relation("employee", fields: [employee_id], references: [id])
   employee_id Int?
   employer    User     @relation("employer", fields: [employer_id], references: [id])
   employer_id Int
-  categoty    Category @relation(fields: [category_id], references: [id])
+  category    Category @relation(fields: [category_id], references: [id])
   category_id Int
   bids        Bids[]
   reviews     Review[]
@@ -91,5 +90,5 @@ model Chat {
   conversation    Conversation @relation(fields: [conversation_id], references: [id])
   conversation_id Int
   user            User         @relation(fields: [user_id], references: [id])
-  user_id          Int
+  user_id         Int
 }
