@@ -182,6 +182,22 @@ app.get('/projects/:id', async (req, res) => {
   }
 })
 
+app.patch('/projects/:id', async (req, res) => {
+  const {employee_id} = req.body
+  const id = Number(req.params.id)
+  try {
+    let project = await prisma.project.update({ where: { id }, data: {employee_id} })
+    if (project) {
+      res.send(project)
+    } else {
+      res.status(404).send({ error: "Project not found" })
+    }
+  } catch (err) {
+    //@ts-ignore
+    res.status(400).send({ error: err.message })
+  }
+})
+
 
 app.post('/bids', async (req, res) => {
 
@@ -247,6 +263,7 @@ app.post('/conversations', async (req, res) => {
     res.status(400).send({ error: err.message })
   }
 })
+
 
 app.get('/conversations', async (req, res) => {
   const token = req.headers.authorization || ""
