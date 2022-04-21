@@ -222,6 +222,17 @@ app.get('/bids/:project_id', async (req, res) => {
 
 })
 
+app.delete('/bids/:id', async (req, res) => {
+  const id = Number(req.params.id)
+  try {
+    const bid = await prisma.bids.delete({ where: { id } })
+    res.send(bid)
+  }
+  catch (err) {
+    //@ts-ignore
+    res.status(400).send({ error: err.message })
+  }
+})
 
 
 app.post('/reviews', async (req, res) => {
