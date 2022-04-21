@@ -237,7 +237,7 @@ app.post('/conversations', async (req, res) => {
   const { participant_id } = req.body
   try {
     const user = await getUserFromToken(token);
-    const conversation = await prisma.conversation.create({
+    const conversation = await prisma.conversation.create({ 
       data: { user_id: user.id, participant_id },
       include: { chats: true }
     })
@@ -253,7 +253,7 @@ app.get('/conversations', async (req, res) => {
   try {
     const user = await getUserFromToken(token);
     const conversations = await prisma.conversation.findMany({
-      where: { user_id: user.id },
+      where: {OR:[ { user_id: user.id }, { participant_id: user.id } ]},
       include: { chats: true }
     })
     res.send(conversations)
