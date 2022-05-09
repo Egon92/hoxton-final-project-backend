@@ -22,7 +22,7 @@ async function getUserFromToken(token: string) {
   const data = jwt.verify(token, process.env.MY_SECRET) as { id: number };
   const employee = await prisma.user.findUnique({
     where: { id: data.id },
-    include:{ postedProjects: {include:{employee: true} }, acceptedProjects: true}
+    include: { postedAppointements: { include: { normalUser: true } }, acceptedAppointemets: true }
   });
 
   return employee;
@@ -48,7 +48,7 @@ app.post("/login", async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { email: email },
-      include:{ postedProjects: {include:{employee: true}}, acceptedProjects: true}
+      include: { postedAppointements: { include: { normalUser: true } }, acceptedAppointemets: true }
     });
 
     const checkPassword = bcrypt.compareSync(password, user.password);
@@ -65,13 +65,13 @@ app.post("/login", async (req, res) => {
 
 
 app.post('/signup', async (req, res) => {
-  const { username, full_name, email, password, avatar, phone, address, bio, isEmployer } = req.body
+  const { username, full_name, email, password, avatar, phone, address, bio, isDoctor } = req.body
 
   try {
     const hash = bcrypt.hashSync(password, 8)
     const user = await prisma.user.create({
-      data: { username, full_name, email, password: hash, avatar, phone, address, bio, isEmployer },
-      include:{ postedProjects: {include:{employee: true}}, acceptedProjects: true}
+      data: { username, full_name, email, password: hash, avatar, phone, address, bio, isDoctor },
+      include: { postedAppointements: { include: { normalUser: true } }, acceptedAppointemets: true }
     })
     res.send({ user, token: createToken(user.id) })
   }
@@ -82,17 +82,17 @@ app.post('/signup', async (req, res) => {
   }
 })
 
-app.get("/employees", async (req, res) => {
+app.get("/users", async (req, res) => {
   try {
-    const employees = await prisma.user.findMany({
+    const user = await prisma.user.findMany({
       include: {
-        reviews: true,
+        postedAppointements: true,
       },
       where: {
-        isEmployer: false
+        isDoctor: false
       }
     });
-    res.send(employees)
+    res.send(user)
 
   } catch (err) {
     //@ts-ignore
@@ -100,12 +100,12 @@ app.get("/employees", async (req, res) => {
   }
 });
 
-app.get("/employees/:id", async (req, res) => {
+app.get("/users/:id", async (req, res) => {
   const id = Number(req.params.id);
   try {
     const employee = await prisma.user.findUnique({
       where: { id },
-      include: {acceptedProjects: true}
+      include: { acceptedAppointemets: true }
     });
     if (employee) {
       res.send(employee);
@@ -129,16 +129,16 @@ app.get('/categories', async (req, res) => {
 })
 
 
-app.post('/projects', async (req, res) => {
+app.post('/appointement', async (req, res) => {
 
   const { price, deadline, title, description, status, category_id } = req.body
   const token = req.headers.authorization || ''
 
   try {
     const user = await getUserFromToken(token)
-    if (user.isEmployer) {
-      const project = await prisma.project.create({
-        data: { price, deadline, title, description, status, employer_id: user.id, category_id: category_id }
+    if (user.isDoctor) {
+      const project = await prisma.appointement.create({
+        data: { price, deadline, title, description, status, doctor_id: user.id, category_id: category_id }
       })
 
       res.send(project)
@@ -152,12 +152,13 @@ app.post('/projects', async (req, res) => {
   }
 })
 
-app.get('/projects', async (req, res) => {
+
+app.get('/appointement', async (req, res) => {
   const { category_id } = req.body
   try {
-    let projects = await prisma.project.findMany({ where: { employee_id: null } })
+    let projects = await prisma.appointement.findMany({ where: { user_id: null } })
     if (category_id) {
-      projects = projects.filter(project => project.category_id === category_id)
+      projects = projects.filter(appointement => appointement.category_id === category_id)
     }
     res.send(projects)
 
@@ -167,10 +168,10 @@ app.get('/projects', async (req, res) => {
   }
 })
 
-app.get('/projects/:id', async (req, res) => {
+app.get('/appointement/:id', async (req, res) => {
   const id = Number(req.params.id)
   try {
-    let project = await prisma.project.findUnique({ where: { id } })
+    let project = await prisma.appointement.findUnique({ where: { id } })
     if (project) {
       res.send(project)
     } else {
@@ -182,11 +183,11 @@ app.get('/projects/:id', async (req, res) => {
   }
 })
 
-app.patch('/projects/:id', async (req, res) => {
-  const {employee_id} = req.body
+app.patch('/appointement/:id', async (req, res) => {
+  const { user_id } = req.body
   const id = Number(req.params.id)
   try {
-    let project = await prisma.project.update({ where: { id }, data: {employee_id} })
+    let project = await prisma.appointement.update({ where: { id }, data: { user_id } })
     if (project) {
       res.send(project)
     } else {
@@ -201,10 +202,10 @@ app.patch('/projects/:id', async (req, res) => {
 
 app.post('/bids', async (req, res) => {
 
-  const { project_id, bids, employee_id } = req.body
+  const { project_id, bids, user_id } = req.body
   try {
     const bid = await prisma.bids.create({
-      data: { project_id, bids, employee_id }
+      data: { project_id, bids, user_id }
     })
     res.send(bid)
   }
@@ -216,7 +217,7 @@ app.post('/bids', async (req, res) => {
 
 app.get('/bids/:project_id', async (req, res) => {
   const project_id = Number(req.params.project_id)
-  const bid = await prisma.bids.findMany({ include: { employee: true }, where: { project_id } })
+  const bid = await prisma.bids.findMany({ include: { normalUser: true }, where: { project_id } })
 
   res.send(bid)
 
@@ -235,79 +236,78 @@ app.delete('/bids/:id', async (req, res) => {
 })
 
 
-app.post('/reviews', async (req, res) => {
+// app.post('/reviews', async (req, res) => {
 
-  const { text, project_id, employee_id, dateCreated } = req.body
-  try {
-    const reviews = await prisma.review.create({
-      data: { text, project_id, employee_id, dateCreated }
-    })
-    res.send(reviews)
-  }
-  catch (err) {
-    //@ts-ignore
-    res.status(400).send({ error: err.message })
-  }
-})
+//   const { text, project_id, employee_id, dateCreated } = req.body
+//   try {
+//     const reviews = await prisma.review.create({
+//       data: { text, project_id, employee_id, dateCreated }
+//     })
+//     res.send(reviews)
+//   }
+//   catch (err) {
+//     res.status(400).send({ error: err.message })
+//   }
+// })
 
-app.get('/reviews', async (req, res) => {
-  const bid = await prisma.review.findMany({ include: { employee: true, project: true } })
+// app.get('/reviews', async (req, res) => {
+//   const bid = await prisma.review.findMany({ include: { employee: true, project: true } })
 
-  res.send(bid)
+//   res.send(bid)
 
-})
-
-
-app.post('/conversations', async (req, res) => {
-  const token = req.headers.authorization || ""
-
-  const { participant_id } = req.body
-  try {
-    const user = await getUserFromToken(token);
-    const conversation = await prisma.conversation.create({ 
-      data: { user_id: user.id, participant_id },
-      include: { chats: true }
-    })
-    res.send(conversation)
-  } catch (err) {
-    //@ts-ignore
-    res.status(400).send({ error: err.message })
-  }
-})
+// })
 
 
-app.get('/conversations', async (req, res) => {
-  const token = req.headers.authorization || ""
-  try {
-    const user = await getUserFromToken(token);
-    const conversations = await prisma.conversation.findMany({
-      where: {OR:[ { user_id: user.id }, { participant_id: user.id } ]},
-      include: { chats: true }
-    })
-    res.send(conversations)
-  } catch (err) {
-    //@ts-ignore
-    res.status(400).send({ error: err.message })
-  }
-})
+// app.post('/conversations', async (req, res) => {
+//   const token = req.headers.authorization || ""
+
+//   const { participant_id } = req.body
+//   try {
+//     const user = await getUserFromToken(token);
+//     const conversation = await prisma.conversation.create({
+//       data: { user_id: user.id, participant_id },
+//       include: { chats: true }
+//     })
+//     res.send(conversation)
+//   } catch (err) {
+//     //@ts-ignore
+//     res.status(400).send({ error: err.message })
+//   }
+// })
 
 
-app.post('/chat', async (req, res) => {
-  const { messageText, conversation_id } = req.body
-  const token = req.headers.authorization || ''
-  try {
-    const user = await getUserFromToken(token)
-    const chat = await prisma.chat.create({
-      data: { messageText, conversation_id, user_id: user.id }
-    })
-    res.send(chat)
+// app.get('/conversations', async (req, res) => {
+//   const token = req.headers.authorization || ""
+//   try {
+//     const user = await getUserFromToken(token);
+//     const conversations = await prisma.conversation.findMany({
+//       where: { OR: [{ user_id: user.id }, { participant_id: user.id }] },
+//       include: { chats: true }
+//     })
+//     res.send(conversations)
+//   } catch (err) {
+//     //@ts-ignore
+//     res.status(400).send({ error: err.message })
+//   }
+// })
 
-  }
-  catch (err) {
-    //@ts-ignore
-    res.status(400).send({ error: err.message })
-  }
-})
+
+// app.post('/chat', async (req, res) => {
+//   const { messageText, conversation_id } = req.body
+//   const token = req.headers.authorization || ''
+//   try {
+//     const user = await getUserFromToken(token)
+//     const chat = await prisma.chat.create({
+//       data: { messageText, conversation_id, user_id: user.id }
+//     })
+//     res.send(chat)
+
+//   }
+//   catch (err) {
+//     //@ts-ignore
+//     res.status(400).send({ error: err.message })
+//   }
+// })
 
 app.listen(PORT, () => {
   console.log(`Server on http://localhost:${PORT}`);
